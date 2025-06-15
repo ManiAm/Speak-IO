@@ -1,0 +1,93 @@
+select, button {
+  margin: 8px;
+}
+
+#log {
+  white-space: pre-wrap;
+  font-family: monospace;
+  padding: 10px;
+  border: 1px solid #ccc;
+  background-color: #fafafa;
+  margin-top: 20px;
+}
+
+#log div {
+  margin-bottom: 6px;
+}
+
+#log .banner {
+  font-weight: bold;
+  background-color: #f0f0f0;
+  padding: 6px;
+  margin-top: 12px;
+  border-left: 4px solid #007acc;
+}
+
+.tabs {
+  margin-bottom: 15px;
+}
+
+.tab-button {
+  padding: 8px 16px;
+  margin-right: 5px;
+  cursor: pointer;
+  background-color: #eee;
+  border: 1px solid #ccc;
+  border-radius: 4px 4px 0 0;
+}
+
+.tab-button.active {
+  background-color: #fff;
+  border-bottom: none;
+  font-weight: bold;
+}
+
+.tab-content {
+  border: 1px solid #ccc;
+  padding: 12px;
+  background-color: #fff;
+  border-radius: 0 4px 4px 4px;
+}
+
+.tts-tabs {
+  margin: 10px 0;
+}
+
+.tts-tab-button {
+  padding: 6px 12px;
+  margin-right: 5px;
+  background-color: #eee;
+  border: 1px solid #ccc;
+  border-radius: 4px 4px 0 0;
+  cursor: pointer;
+}
+
+.tts-tab-button.active {
+  background-color: #fff;
+  font-weight: bold;
+  border-bottom: none;
+}
+
+.tts-engine-tab {
+  border: 1px solid #ccc;
+  border-top: none;
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 0 0 4px 4px;
+}
+
+#tts-text {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 160px;
+  font-size: 16px;
+  line-height: 1.5;
+  padding: 10px;
+  resize: vertical;
+}
+
+#tts-example-select {
+  margin-bottom: 10px;
+  padding: 6px;
+  font-size: 14px;
+}

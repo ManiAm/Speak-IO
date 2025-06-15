@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Voice UI</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+  <h2>🎤 Voice UI</h2>
+
+  <!-- Main Tabs -->
+  <div class="tabs">
+    <button class="tab-button active" onclick="showTab('stt-tab')">Speech to Text</button>
+    <button class="tab-button" onclick="showTab('tts-tab')">Text to Speech</button>
+  </div>
+
+  <!-- Speech to Text Tab -->
+  <div id="stt-tab" class="tab-content">
+    <label for="engine-select">Engine:</label>
+    <select id="engine-select" onchange="updateModelsDropdown()">
+      <option value="">-- Select Engine --</option>
+    </select>
+
+    <label for="model-select">Model:</label>
+    <select id="model-select">
+      <option value="">-- Select Model --</option>
+    </select>
+
+    <button onclick="loadModel()">Load Model</button>
+    <button onclick="start()">Start</button>
+    <button onclick="stop()">Stop</button>
+
+    <div id="spinner" style="display: none; font-weight: bold; color: blue;">
+      🔄 Loading model. Please wait...
+    </div>
+
+    <pre id="log">Waiting...</pre>
+  </div>
+
+  <!-- Text to Speech Tab -->
+  <div id="tts-tab" class="tab-content" style="display:none;">
+
+    <!-- Nested TTS Engine Tabs -->
+    <div class="tts-tabs">
+      <button class="tts-tab-button active" onclick="showTtsEngine('coqui')">Coqui</button>
+      <button class="tts-tab-button" onclick="showTtsEngine('piper')">Piper</button>
+      <button class="tts-tab-button" onclick="showTtsEngine('bark')">Bark</button>
+      <button class="tts-tab-button" onclick="showTtsEngine('chatterbox')">Chatterbox</button>
+    </div>
+
+    <!-- Coqui UI -->
+    <div id="coqui-tab" class="tts-engine-tab">
+      <div>
+        <label>TTS Model - Language:</label>
+        <select id="coqui-tts_models-language"></select>
+        <label>Model:</label>
+        <select id="coqui-tts_models-model"></select>
+      </div>
+
+      <div>
+        <label>Vocoder - Language:</label>
+        <select id="coqui-vocoder_models-language"></select>
+        <label>Model:</label>
+        <select id="coqui-vocoder_models-model"></select>
+      </div>
+
+      <div>
+        <label>Voice Conversion - Language:</label>
+        <select id="coqui-voice_conversion_models-language"></select>
+        <label>Model:</label>
+        <select id="coqui-voice_conversion_models-model"></select>
+      </div>
+    </div>
+
+    <!-- Piper UI -->
+    <div id="piper-tab" class="tts-engine-tab" style="display:none;">
+      <label>Language:</label>
+      <select id="piper-language"></select>
+
+      <label>Voice:</label>
+      <select id="piper-voice"></select>
+
+      <label>Quality:</label>
+      <select id="piper-quality"></select>
+
+      <label>Model:</label>
+      <select id="piper-model-name"></select>
+    </div>
+
+    <!-- Bark UI -->
+    <div id="bark-tab" class="tts-engine-tab" style="display:none;">
+      <label>Prompt Name:</label>
+      <select id="bark-prompt"></select>
+    </div>
+
+    <!-- Chatterbox Tab -->
+    <div id="chatterbox-tab" class="tts-engine-tab" style="display:none">
+      <label for="chatterbox-prompt">Audio Prompt:</label>
+      <select id="chatterbox-prompt"></select>
+    </div>
+
+    <!-- Button and Spinner Container -->
+    <div style="display: flex; align-items: center; gap: 10px; margin-top: 1em;">
+      <button onclick="loadTtsModel()">Load Model</button>
+      <div id="tts-spinner" style="display:none; font-weight: bold; color: blue;">
+        🔄 Loading TTS model. Please wait...
+      </div>
+    </div>
+
+    <br><br>
+
+    <label for="tts-example-select">Example Text:</label>
+    <select id="tts-example-select" onchange="updateTtsExample()">
+      <option value="en">English</option>
+      <option value="zh">Chinese (中文)</option>
+      <option value="hi">Hindi (हिन्दी)</option>
+      <option value="es">Spanish (Español)</option>
+      <option value="fr">French (Français)</option>
+      <option value="ar">Arabic (العربية)</option>
+      <option value="bn">Bengali (বাংলা)</option>
+      <option value="ru">Russian (Русский)</option>
+      <option value="pt">Portuguese (Português)</option>
+      <option value="de">German (Deutsch)</option>
+      <option value="ja">Japanese (日本語)</option>
+      <option value="fa">Farsi (فارسی)</option>
+      <option value="tr">Turkish (Türkçe)</option>
+      <option value="ko">Korean (한국어)</option>
+    </select>
+
+    <textarea id="tts-text" dir="auto" rows="10" cols="100">
+Hello, and welcome to the future of speech synthesis! Today is Tuesday, June 18th, 2025, and the temperature outside is a pleasant 72 degrees Fahrenheit. In a world full of possibilities, artificial intelligence continues to reshape how we communicate, learn, and explore. Can you believe that just a few years ago, real-time voice generation like this was considered science fiction? Now, whether you're narrating a documentary, reading a bedtime story, or delivering emergency instructions, the clarity and naturalness of your voice really matter. So let's pause, take a breath, and appreciate just how far technology has come. Shall we?
+    </textarea>
+
+    <br>
+    <button onclick="speak()">Speak</button>
+    <br><br>
+    <audio id="tts-audio" controls style="display:none;"></audio>
+  </div>
+
+  <!-- JS -->
+  <script src="/static/main.js"></script>
+  <script src="/static/stt.js"></script>
+  <script src="/static/tts.js"></script>
+</body>
+
+</html>
