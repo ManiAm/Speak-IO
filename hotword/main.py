@@ -6,6 +6,7 @@ import logging
 import uvicorn
 from pydantic import BaseModel
 from typing import Optional
+from enum import Enum
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
@@ -48,10 +49,28 @@ class ListenParams(BaseModel):
     model_name: Optional[str] = "vosk-model-en-us-0.22"
 
 
-@router.get("/health")
-def health_check():
+class MessageStatus(str, Enum):
+    OK = "ok"
+    ERROR = "error"
 
-    return {"status": "ok"}
+
+class MessageType(str, Enum):
+    SERVER_NOTIFICATION = "server_notification"
+    TRANSCRIBED = "transcribed"
+
+
+async def send_message(websocket, msg_status, msg_type, msg):
+
+    message = {
+        "status": msg_status,
+        "type": msg_type,
+        "text": msg
+    }
+
+    try:
+        await websocket.send_text(json.dumps(message))
+    except Exception:
+        pass
 
 
 async def safe_close(ws: WebSocket):
@@ -62,13 +81,25 @@ async def safe_close(ws: WebSocket):
         pass
 
 
+@router.get("/health")
+def health_check():
+
+    return {"status": "ok"}
+
+
 @router.websocket("/listen")
 async def websocket_listen(websocket: WebSocket):
 
     await websocket.accept()
 
     if lock.locked():
-        await websocket.send_text("Another session is already running.")
+
+        await send_message(
+            websocket,
+            MessageStatus.ERROR,
+            MessageType.SERVER_NOTIFICATION,
+            "Another session is already running.")
+
         await safe_close(websocket)
         return
 
@@ -79,21 +110,38 @@ async def websocket_listen(websocket: WebSocket):
             params_raw = await websocket.receive_text()
             params = ListenParams(**json.loads(params_raw))
 
-            status, output = hw_obj.init_hotword(
-                dev_index=params.dev_index,
-                model_engine=params.model_engine,
-                model_name=params.model_name
+            loop = asyncio.get_event_loop()
+
+            status, output = await loop.run_in_executor(
+                None,
+                lambda: hw_obj.init_hotword(
+                    dev_index=params.dev_index,
+                    model_engine=params.model_engine,
+                    model_name=params.model_name
+                )
             )
 
             if not status:
-                await websocket.send_text(f"init_hotword failed: {output}")
+                await send_message(
+                    websocket,
+                    MessageStatus.ERROR,
+                    MessageType.SERVER_NOTIFICATION,
+                    f"init_hotword failed: {output}")
                 await safe_close(websocket)
                 return
 
-            await websocket.send_text("Hotword detection initialized. Listening...")
+            await send_message(
+                websocket,
+                MessageStatus.OK,
+                MessageType.SERVER_NOTIFICATION,
+                "Hotword detection initialized. Listening...")
 
         except Exception as e:
-            print(f"Error: {e}")
+            await send_message(
+                websocket,
+                MessageStatus.ERROR,
+                MessageType.SERVER_NOTIFICATION,
+                str(e))
             await safe_close(websocket)
             hw_obj.stop_hotword_detection()
             return
@@ -103,9 +151,15 @@ async def websocket_listen(websocket: WebSocket):
             loop = asyncio.get_event_loop()
 
             def on_transcription(text):
-                asyncio.run_coroutine_threadsafe(websocket.send_text(text), loop)
+                asyncio.run_coroutine_threadsafe(
+                    send_message(websocket, MessageStatus.OK, MessageType.TRANSCRIBED, text),
+                    loop)
 
-            future = loop.run_in_executor(None, hw_obj.detect_hotword_and_transcribe, params.hotwords, on_transcription)
+            future = loop.run_in_executor(
+                None,
+                hw_obj.detect_hotword_and_transcribe,
+                params.hotwords,
+                on_transcription)
 
             while not future.done():
 
@@ -118,7 +172,11 @@ async def websocket_listen(websocket: WebSocket):
                     break
 
         except Exception as e:
-            print(f"Error: {e}")
+            await send_message(
+                websocket,
+                MessageStatus.ERROR,
+                MessageType.SERVER_NOTIFICATION,
+                str(e))
 
         finally:
             await safe_close(websocket)

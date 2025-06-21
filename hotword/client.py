@@ -1,4 +1,5 @@
 
+import sys
 import asyncio
 import websockets
 import json
@@ -16,6 +17,7 @@ async def main():
             "dev_index": None
         }
 
+        print("Setting up hotword detection. Please wait...", flush=True)
         await websocket.send(json.dumps(params))
 
         while True:
@@ -24,7 +26,19 @@ async def main():
                 msg = await websocket.recv()
                 print("SERVER:", msg, flush=True)
             except websockets.exceptions.ConnectionClosed:
-                print("Connection closed!")
+                print("Connection closed by server.", flush=True)
                 break
 
-asyncio.run(main())
+
+def run():
+
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\nForced shutdown.")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+
+    run()
