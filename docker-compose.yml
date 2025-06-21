@@ -44,28 +44,34 @@ services:
     networks:
       - speak_io_net
 
+  hotword:
+    build: ./hotword
+    container_name: hotword
+    hostname: hotword
+    ports:
+      - "5600:5600"
+    restart: on-failure:3
+    devices:
+      - "/dev/snd"
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./hotword:/app
+    depends_on:
+      - speech_to_text
+    networks:
+      - speak_io_net
+
   voice_ui:
     build: ./voice_ui
     container_name: voice_ui
     hostname: voice_ui
     restart: on-failure:3
     ports:
-      - "5600:5600"
+      - "5700:5700"
     depends_on:
       - speech_to_text
       - text_to_speech
-    networks:
-      - speak_io_net
-
-  hotword:
-    build: ./hotword
-    container_name: hotword
-    hostname: hotword
-    restart: on-failure:3
-    stdin_open: true
-    tty: true
-    depends_on:
-      - speech_to_text
     networks:
       - speak_io_net
 

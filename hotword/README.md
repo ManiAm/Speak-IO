@@ -27,4 +27,4 @@ There are several methods to implement hotword detection, with varying trade-off
 
 ## Speak-IO Hotword Detection
 
-In the context of STT systems like Speak-IO, hotword detection can be used to trigger the start of recording or transcription automatically, reducing the need for manual interaction like clicking a "Start" button. This makes the experience more natural and streamlined, especially in hands-free or accessibility-focused scenarios. You can find an implemetation of hotword detection in [here](hotword.py).
+In the context of STT systems like Speak-IO, hotword detection can be used to trigger the start of recording or transcription automatically, reducing the need for manual interaction like clicking a "Start" button. This makes the experience more natural and streamlined, especially in hands-free or accessibility-focused scenarios. You can find an implemetation of hotword detection using Vosk engine in [here](main.py).

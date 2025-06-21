@@ -33,10 +33,22 @@ ENV VENV_PATH=/venv
 RUN python3 -m venv $VENV_PATH && \
     $VENV_PATH/bin/pip install --upgrade pip && \
     $VENV_PATH/bin/pip install --no-cache-dir \
+        setuptools  \
+        fastapi \
+        uvicorn \
+        requests \
+        numpy \
+        scipy \
+        python-dotenv \
+        soundfile \
+        cffi \
+        webrtcvad \
         sounddevice \
         pydub \
         vosk
 
 ENV PATH="$VENV_PATH/bin:$PATH"
 
-CMD ["/bin/bash"]
+EXPOSE 5600
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5600"]

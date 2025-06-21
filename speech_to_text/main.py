@@ -21,7 +21,7 @@ app = FastAPI(
     title="Speak-IO STT API",
     description="speech-to-text API supporting multiple engines and models.",
     version="1.0.0",
-    docs_url="/api/docs",  # localhost:5000/api/docs
+    docs_url="/api/docs",
     redoc_url=None,
     openapi_url="/api/openapi.json"
 )
@@ -35,6 +35,12 @@ app.add_middleware(
 )
 
 router = APIRouter()
+
+
+@router.get("/health")
+def health_check():
+
+    return {"status": "ok"}
 
 
 @router.get("/models")

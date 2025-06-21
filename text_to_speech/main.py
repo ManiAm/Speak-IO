@@ -18,7 +18,7 @@ app = FastAPI(
     title="Speak-IO TTS API",
     description="text-to-speech API supporting multiple engines and models.",
     version="1.0.0",
-    docs_url="/api/docs",  # localhost:5500/api/docs
+    docs_url="/api/docs",
     redoc_url=None,
     openapi_url="/api/openapi.json"
 )
@@ -37,6 +37,12 @@ class SynthesizeParams(BaseModel):
     text: str = ""
     engine: str = "piper"
     model_name: str = "en_US-lessac-medium"
+
+
+@router.get("/health")
+def health_check():
+
+    return {"status": "ok"}
 
 
 @router.get("/models")

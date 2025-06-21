@@ -29,5 +29,5 @@ async def get_index(request: Request):
 
 if __name__ == "__main__":
 
-    print("Starting Voice_UI on http://localhost:5600")
-    uvicorn.run(app, host="0.0.0.0", port=5600)
+    print("Starting Voice_UI on http://localhost:5700")
+    uvicorn.run(app, host="0.0.0.0", port=5700)

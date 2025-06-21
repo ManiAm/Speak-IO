@@ -16,6 +16,6 @@ COPY main.py .
 COPY static/ ./static/
 COPY templates/ ./templates/
 
-EXPOSE 5600
+EXPOSE 5700
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5600"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5700"]
