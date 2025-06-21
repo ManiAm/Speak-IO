@@ -27,11 +27,6 @@ class HotwordEngine():
             print("SST service is not reachable")
             sys.exit(1)
 
-        status, output = self.stt_client.load_model("openai_whisper", "small.en")
-        if not status:
-            print(f"loading STT model failed: {output}")
-            sys.exit(1)
-
         self.input_dev_index = None
         self.input_dev_sample_rate = None
         self.input_dev_channels = None
@@ -51,13 +46,23 @@ class HotwordEngine():
         self.hotword_sound = os.path.join(sound_dir, "bell_1.wav")
 
 
-    def init_hotword(self, dev_index=None, model_engine="vosq", model_name="vosk-model-en-us-0.22"):
+    def init_hotword(
+        self,
+        dev_index=None,
+        model_engine_hotword="vosq",
+        model_name_hotword="vosk-model-en-us-0.22",
+        model_engine_stt="openai_whisper",
+        model_name_stt="small.en"):
 
         status, output = self.__init_input_device(dev_index)
         if not status:
             return False, output
 
-        status, output = self.__init_engine(model_engine, model_name)
+        status, output = self.__init_engine_hotword(model_engine_hotword, model_name_hotword)
+        if not status:
+            return False, output
+
+        status, output = self.__init_engine_stt(model_engine_stt, model_name_stt)
         if not status:
             return False, output
 
@@ -90,16 +95,16 @@ class HotwordEngine():
         return True, None
 
 
-    def __init_engine(self, model_engine, model_name):
+    def __init_engine_hotword(self, model_engine_hotword, model_name_hotword):
 
-        if model_engine != "vosk":
-            return False, "Unsupported engine"
+        if model_engine_hotword != "vosk":
+            return False, f"Unsupported engine: {model_engine_hotword}"
 
-        print(f"\n🔄 Loading Vosk model '{model_name}'...")
+        print(f"\n🔄 Loading {model_engine_hotword} model '{model_name_hotword}'...")
 
         try:
 
-            self.vosk_model = Model(model_name=model_name)
+            self.vosk_model = Model(model_name=model_name_hotword)
             self.vosk_recognizer = KaldiRecognizer(self.vosk_model, self.input_dev_sample_rate)
             self.vosk_recognizer.SetWords(True) # enable word-level recognition output
 
@@ -107,6 +112,13 @@ class HotwordEngine():
             return False, str(e)
 
         return True, None
+
+
+    def __init_engine_stt(self, model_engine_stt, model_name_stt):
+
+        print(f"\n🔄 Loading {model_engine_stt} model '{model_name_stt}'...")
+
+        return self.stt_client.load_model(model_engine_stt, model_name_stt)
 
 
     def stop_hotword_detection(self):
@@ -126,7 +138,13 @@ class HotwordEngine():
         gc.collect()
 
 
-    def detect_hotword_and_transcribe(self, hotword_list, on_transcription_callback=None, target_latency_ms=100):
+    def detect_hotword_and_transcribe(
+        self,
+        hotword_list,
+        on_hotword_callback=None,
+        on_transcription_callback=None,
+        target_latency_ms=100,
+        silence_duration_s=3):
 
         if self.input_dev_index is None:
             print("hotword detection is not initialized!")
@@ -139,11 +157,12 @@ class HotwordEngine():
 
             print(f"\nListening for hotwords '{self.hotword_list}'...")
 
-            self.__start_hotword_detection(blocksize)
+            # blocking call until hotword is detected
+            self.__start_hotword_detection(blocksize, on_hotword_callback)
 
             if not self.script_interrupted:
 
-                callback, audio_frames = self.__record_callback()
+                callback, audio_frames = self.__record_callback(silence_duration=silence_duration_s)
 
                 with sd.RawInputStream(
                     device=self.input_dev_index,
@@ -173,7 +192,7 @@ class HotwordEngine():
         return blocksize
 
 
-    def __start_hotword_detection(self, blocksize):
+    def __start_hotword_detection(self, blocksize, on_hotword_callback=None):
 
         with sd.RawInputStream(
             device=self.input_dev_index,
@@ -198,8 +217,14 @@ class HotwordEngine():
                     print(f"[VOICE] {text}")
 
                     for word in self.hotword_list:
+
                         if word in text:
+
                             print(f"🔊 Hotword detected: {word}")
+
+                            if on_hotword_callback:
+                                on_hotword_callback(word)
+
                             utility.play_wav(self.hotword_sound)
                             return
 

@@ -43,10 +43,14 @@ running_lock = threading.Lock()
 
 
 class ListenParams(BaseModel):
-    hotwords: list[str] = ["hey jarvis", "hey agent"]
     dev_index: Optional[int] = None
-    model_engine: Optional[str] = "vosq"
-    model_name: Optional[str] = "vosk-model-en-us-0.22"
+    hotwords: list[str] = ["hey jarvis", "hey agent"]
+    model_engine_hotword: Optional[str] = "vosq"
+    model_name_hotword: Optional[str] = "vosk-model-en-us-0.22"
+    model_engine_stt: Optional[str] = "openai_whisper"
+    model_name_stt: Optional[str] = "small.en"
+    target_latency: Optional[int] = 100
+    silence_duration: Optional[int] = 3
 
 
 class MessageStatus(str, Enum):
@@ -56,6 +60,7 @@ class MessageStatus(str, Enum):
 
 class MessageType(str, Enum):
     SERVER_NOTIFICATION = "server_notification"
+    HOTWORD = "hotword"
     TRANSCRIBED = "transcribed"
 
 
@@ -109,6 +114,7 @@ async def websocket_listen(websocket: WebSocket):
 
             params_raw = await websocket.receive_text()
             params = ListenParams(**json.loads(params_raw))
+            print(f"Received parameters from client: {params.model_dump()}")
 
             loop = asyncio.get_event_loop()
 
@@ -116,8 +122,10 @@ async def websocket_listen(websocket: WebSocket):
                 None,
                 lambda: hw_obj.init_hotword(
                     dev_index=params.dev_index,
-                    model_engine=params.model_engine,
-                    model_name=params.model_name
+                    model_engine_hotword=params.model_engine_hotword,
+                    model_name_hotword=params.model_name_hotword,
+                    model_engine_stt=params.model_engine_stt,
+                    model_name_stt=params.model_name_stt
                 )
             )
 
@@ -150,6 +158,11 @@ async def websocket_listen(websocket: WebSocket):
 
             loop = asyncio.get_event_loop()
 
+            def on_hotword(text):
+                asyncio.run_coroutine_threadsafe(
+                    send_message(websocket, MessageStatus.OK, MessageType.HOTWORD, text),
+                    loop)
+
             def on_transcription(text):
                 asyncio.run_coroutine_threadsafe(
                     send_message(websocket, MessageStatus.OK, MessageType.TRANSCRIBED, text),
@@ -159,7 +172,10 @@ async def websocket_listen(websocket: WebSocket):
                 None,
                 hw_obj.detect_hotword_and_transcribe,
                 params.hotwords,
-                on_transcription)
+                on_hotword,
+                on_transcription,
+                params.target_latency,
+                params.silence_duration)
 
             while not future.done():
 
