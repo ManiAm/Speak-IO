@@ -10,15 +10,28 @@ async def main():
 
     async with websockets.connect(uri) as websocket:
 
+        # example for Pvporcupine
         params = {
-            "dev_index": None,                                   # Audio input device index (None = default)
-            "hotwords": ["hey jarvis", "hey agent"],             # List of trigger phrases to activate STT
-            "model_engine_hotword": "vosk",                      # hotword detection engine to use
-            "model_name_hotword": "vosk-model-en-us-0.22",       # Name of the specific model to load
-            "model_engine_stt": "openai_whisper",                # STT engine to use
-            "model_name_stt": "small.en",                        # Name of the specific model to load
-            "target_latency": 100,                               # Desired processing latency (in milliseconds)
-            "silence_duration": 3                                # Duration of silence (in seconds) to stop recording
+            "dev_index": None,
+            "hotwords": ["hey agent", "bumblebee"],
+            "model_engine_hotword": "pvporcupine",
+            "model_name_hotword": None,
+            "model_engine_stt": "openai_whisper",
+            "model_name_stt": "small.en",
+            "target_latency": 100,
+            "silence_duration": 3
+        }
+
+        # example for Vosk
+        params = {
+            "dev_index": None,
+            "hotwords": ["hey jarvis", "hey agent"],
+            "model_engine_hotword": "vosk",
+            "model_name_hotword": "vosk-model-en-us-0.22",
+            "model_engine_stt": "openai_whisper",
+            "model_name_stt": "small.en",
+            "target_latency": 100,
+            "silence_duration": 3
         }
 
         print("Setting up hotword detection. Please wait...", flush=True)

@@ -29,7 +29,7 @@ There are several methods to implement hotword detection, with varying trade-off
 
 In the context of Speak-IO project, hotword detection can be used to trigger the start of recording or transcription automatically, reducing the need for manual interaction like clicking a "Start" button. This makes the experience more natural and streamlined, especially in hands-free or accessibility-focused scenarios. You can find the implemetation of hotword detection in [here](main.py).
 
-The hotword service exposes a WebSocket-based interface that [clients](client.py) can connect to. Upon connection, the client must initialize hotword detection by sending a JSON object with relevant parameters such as:
+The hotword service exposes a WebSocket-based interface that [clients](client.py) can connect to. Upon connection, the client must initialize hotword detection by sending a JSON object with relevant parameters. Here is an example where the client is asking to use Vosk for hotword detection and OpenAI Whisper for speech-to-text.
 
     params = {
         "dev_index": None,                                   # Audio input device index (None = default)
@@ -43,3 +43,12 @@ The hotword service exposes a WebSocket-based interface that [clients](client.py
     }
 
 Once initialized, the hotword service actively listens for any of the specified hotwords. When a hotword is detected, the service notifies the client through the WebSocket connection. It then enters a full recording mode, capturing the user's speech until silence is detected. The `silence_duration` parameter allows clients to control how long the service should detect silence (in seconds) before it considers the speech session complete. After recording, the audio is sent to the STT engine for transcription. Once the transcription is complete, the final transcribed text is sent back to the client.
+
+Speak-IO also supports Picovoice [Porcupine](https://github.com/Picovoice/porcupine), a commercial hotword detection engine known for its high accuracy, low latency, and minimal resource usage. To use Porcupine, you must obtain a free access key from Picovoice. Out of the box, Porcupine gives you access to the following pre-trained wakewords:
+
+    "view glass", "smart mirror", "bumblebee", "ok google", "grasshopper",
+    "pico clock", "alexa", "americano", "hey siri", "snowboy",
+    "hey google", "grapefruit", "terminator", "computer",
+    "picovoice", "porcupine", "blueberry", "jarvis", "hey barista"
+
+In addition to these, you can train your own custom wakeword using the [Picovoice Console](https://console.picovoice.ai/), targeting specific platforms (e.g., Linux, macOS, Windows, Android, iOS, Raspberry Pi). The result is a `.ppn` model file which you can include in Speak-IO and reference by filename. Check [this](https://youtu.be/T6jxYRSyF2w) short tutorial for more details.

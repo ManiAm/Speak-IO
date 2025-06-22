@@ -5,7 +5,7 @@ import asyncio
 import logging
 import uvicorn
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from enum import Enum
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -13,7 +13,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import APIRouter
 
-from engine_hotword import HotwordEngine
+from hotword_models import HotwordModel
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
@@ -36,19 +36,19 @@ app.add_middleware(
 
 router = APIRouter()
 
-hw_obj = HotwordEngine()
+hw_obj = HotwordModel()
 
 lock = asyncio.Lock()
 running_lock = threading.Lock()
 
 
 class ListenParams(BaseModel):
-    dev_index: Optional[int] = None
-    hotwords: list[str] = ["hey jarvis", "hey agent"]
-    model_engine_hotword: Optional[str] = "vosq"
-    model_name_hotword: Optional[str] = "vosk-model-en-us-0.22"
-    model_engine_stt: Optional[str] = "openai_whisper"
-    model_name_stt: Optional[str] = "small.en"
+    dev_index: Optional[int]
+    hotwords: List[str]
+    model_engine_hotword: str
+    model_name_hotword: Optional[str]
+    model_engine_stt: str
+    model_name_stt: Optional[str]
     target_latency: Optional[int] = 100
     silence_duration: Optional[int] = 3
 
@@ -185,7 +185,17 @@ async def websocket_listen(websocket: WebSocket):
                     continue
                 except WebSocketDisconnect:
                     print("Client disconnected.")
+                    hw_obj.stop_hotword_detection()
                     break
+
+            if not future.cancelled():
+                status, output = await future
+                if not status:
+                    await send_message(
+                        websocket,
+                        MessageStatus.ERROR,
+                        MessageType.SERVER_NOTIFICATION,
+                        output)
 
         except Exception as e:
             await send_message(

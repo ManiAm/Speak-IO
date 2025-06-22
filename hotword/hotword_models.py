@@ -1,27 +1,32 @@
 
 import os
 import sys
-import json
-import queue
 import time
 import tempfile
-import gc
 import wave
 import webrtcvad
 import sounddevice as sd
 import numpy as np
-from vosk import Model, KaldiRecognizer
 from scipy.signal import resample
 
 import utility
+import config
 from speech_to_text_api import STT_REST_API_Client
 
+from engine_vosk import VoskEngine
+from engine_pvporcupine import PvporcupineEngine
 
-class HotwordEngine():
+MODELS = {
+    "vosk": VoskEngine(),
+    "pvporcupine": PvporcupineEngine()
+}
+
+
+class HotwordModel():
 
     def __init__(self):
 
-        self.stt_client = STT_REST_API_Client(url="http://speech_to_text:5000/api/stt")
+        self.stt_client = STT_REST_API_Client(url=config.speech_to_text_url)
 
         if not self.stt_client.check_health():
             print("SST service is not reachable")
@@ -30,20 +35,12 @@ class HotwordEngine():
         self.input_dev_index = None
         self.input_dev_sample_rate = None
         self.input_dev_channels = None
-        self.vosk_model = None
-        self.vosk_recognizer = None
-        self.hotword_list = []
 
-        self.script_interrupted = False
-        self.q = queue.Queue()
+        self.model_handler = None
+        self.script_state = {"interrupted": False}
 
         self.vad = webrtcvad.Vad(3)
         self.target_rate = 16000
-
-        script_path = os.path.abspath(__file__)
-        script_dir = os.path.dirname(script_path)
-        sound_dir = os.path.join(script_dir, "sounds")
-        self.hotword_sound = os.path.join(sound_dir, "bell_1.wav")
 
 
     def init_hotword(
@@ -97,21 +94,19 @@ class HotwordEngine():
 
     def __init_engine_hotword(self, model_engine_hotword, model_name_hotword):
 
-        if model_engine_hotword != "vosk":
-            return False, f"Unsupported engine: {model_engine_hotword}"
+        if model_engine_hotword not in MODELS:
+            return False, f"Engine '{model_engine_hotword}' not supported"
 
-        print(f"\n🔄 Loading {model_engine_hotword} model '{model_name_hotword}'...")
+        self.model_handler = MODELS[model_engine_hotword]
 
         try:
-
-            self.vosk_model = Model(model_name=model_name_hotword)
-            self.vosk_recognizer = KaldiRecognizer(self.vosk_model, self.input_dev_sample_rate)
-            self.vosk_recognizer.SetWords(True) # enable word-level recognition output
-
+            return self.model_handler.init_model(
+                model_name_hotword,
+                self.input_dev_index,
+                self.input_dev_sample_rate,
+                self.input_dev_channels)
         except Exception as e:
-            return False, str(e)
-
-        return True, None
+            return False, f"Failed to init model: {str(e)}"
 
 
     def __init_engine_stt(self, model_engine_stt, model_name_stt):
@@ -125,17 +120,19 @@ class HotwordEngine():
 
         print("Stopping hotword detection...")
 
-        self.script_interrupted = True
+        self.script_state["interrupted"] = True
 
-        # wait for loops to terminate
-        time.sleep(3)
+        try:
 
-        self.vosk_recognizer = None
-        self.vosk_model = None
+            # wait for loops to terminate
+            time.sleep(3)
 
-        self.script_interrupted = False
+            if self.model_handler:
+                self.model_handler.stop_hotword_detection()
 
-        gc.collect()
+        finally:
+
+            self.script_state["interrupted"] = False
 
 
     def detect_hotword_and_transcribe(
@@ -146,21 +143,22 @@ class HotwordEngine():
         target_latency_ms=100,
         silence_duration_s=3):
 
-        if self.input_dev_index is None:
-            print("hotword detection is not initialized!")
-            sys.exit(1)
+        if self.input_dev_index is None or self.model_handler is None:
+            return False, "hotword detection is not initialized!"
 
-        self.hotword_list = [x.lower() for x in hotword_list]
+        hotword_list = [x.lower() for x in hotword_list]
         blocksize = self.__choose_blocksize(target_latency_ms=target_latency_ms)
 
-        while not self.script_interrupted:
+        while not self.script_state["interrupted"]:
 
-            print(f"\nListening for hotwords '{self.hotword_list}'...")
+            print(f"\nListening for hotwords '{hotword_list}'...")
 
             # blocking call until hotword is detected
-            self.__start_hotword_detection(blocksize, on_hotword_callback)
+            status, output = self.model_handler.start_hotword_detection(hotword_list, blocksize, self.script_state, on_hotword_callback)
+            if not status:
+                return False, output
 
-            if not self.script_interrupted:
+            if not self.script_state["interrupted"]:
 
                 callback, audio_frames = self.__record_callback(silence_duration=silence_duration_s)
 
@@ -180,9 +178,11 @@ class HotwordEngine():
 
                     status, output = self.__recording_done_callback(audio_frames)
                     if not status:
-                        print(f"Error: {output}")
+                        return False, output
                     elif on_transcription_callback:
                         on_transcription_callback(output)
+
+        return True, None
 
 
     def __choose_blocksize(self, target_latency_ms):
@@ -190,55 +190,6 @@ class HotwordEngine():
         block_duration_sec = target_latency_ms / 1000
         blocksize = int(self.input_dev_sample_rate * block_duration_sec)
         return blocksize
-
-
-    def __start_hotword_detection(self, blocksize, on_hotword_callback=None):
-
-        with sd.RawInputStream(
-            device=self.input_dev_index,
-            samplerate=self.input_dev_sample_rate,
-            blocksize=blocksize,
-            dtype='int16',
-            channels=self.input_dev_channels,
-            callback=self.__audio_callback):
-
-            while not self.script_interrupted:
-
-                data = self.q.get()
-
-                if self.vosk_recognizer.AcceptWaveform(data):
-
-                    result = json.loads(self.vosk_recognizer.Result())
-                    text = result.get("text", "").lower()
-
-                    if not text:
-                        continue
-
-                    print(f"[VOICE] {text}")
-
-                    for word in self.hotword_list:
-
-                        if word in text:
-
-                            print(f"🔊 Hotword detected: {word}")
-
-                            if on_hotword_callback:
-                                on_hotword_callback(word)
-
-                            utility.play_wav(self.hotword_sound)
-                            return
-
-                else:
-                    # partial results:
-                    # partial = json.loads(recognizer.PartialResult())["partial"]
-                    pass
-
-
-    def __audio_callback(self, indata, frames, time_info, status):
-
-        if status:
-            print(f"[STATUS] {status}", file=sys.stderr)
-        self.q.put(bytes(indata))
 
 
     def __record_callback(self, frame_duration_ms=30, silence_duration=3):
@@ -257,7 +208,7 @@ class HotwordEngine():
             buffer.extend(pcm)
             audio_frames.append(pcm)
 
-            while not self.script_interrupted and len(buffer) >= frame_size:
+            while not self.script_state["interrupted"] and len(buffer) >= frame_size:
                 frame_bytes = bytes(buffer[:frame_size])
                 buffer = buffer[frame_size:]
 

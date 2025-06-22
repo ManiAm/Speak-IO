@@ -45,7 +45,8 @@ RUN python3 -m venv $VENV_PATH && \
         webrtcvad \
         sounddevice \
         pydub \
-        vosk
+        vosk \
+        pvporcupine
 
 ENV PATH="$VENV_PATH/bin:$PATH"
 
