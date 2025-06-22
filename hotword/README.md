@@ -44,6 +44,12 @@ The hotword service exposes a WebSocket-based interface that [clients](client.py
 
 Once initialized, the hotword service actively listens for any of the specified hotwords. When a hotword is detected, the service notifies the client through the WebSocket connection. It then enters a full recording mode, capturing the user's speech until silence is detected. The `silence_duration` parameter allows clients to control how long the service should detect silence (in seconds) before it considers the speech session complete. After recording, the audio is sent to the STT engine for transcription. Once the transcription is complete, the final transcribed text is sent back to the client.
 
+Speak-IO also supports [OpenWakeWord](https://github.com/dscripka/openWakeWord), an open-source hotword detection engine built for flexibility and local-first operation. It leverages lightweight TensorFlow Lite models optimized for edge devices, and supports loading multiple wakewords simultaneously. It requires no cloud connectivity or API key, making it ideal for privacy-conscious applications and offline environments. Out of the box, OpenWakeWord gives you access to the following [pre-trained](https://github.com/dscripka/openWakeWord#pre-trained-models) wakewords:
+
+    "alexa", "hey mycroft", "hey jarvis", "hey rhasspy", "timer", "weather"
+
+You can train [your own](https://github.com/dscripka/openWakeWord?tab=readme-ov-file#training-new-models) `.tflite` models without needing deep machine learning expertise.
+
 Speak-IO also supports Picovoice [Porcupine](https://github.com/Picovoice/porcupine), a commercial hotword detection engine known for its high accuracy, low latency, and minimal resource usage. To use Porcupine, you must obtain a free access key from Picovoice. Out of the box, Porcupine gives you access to the following pre-trained wakewords:
 
     "view glass", "smart mirror", "bumblebee", "ok google", "grasshopper",

@@ -10,6 +10,18 @@ async def main():
 
     async with websockets.connect(uri) as websocket:
 
+        # example for Vosk
+        params = {
+            "dev_index": None,
+            "hotwords": ["hey jarvis", "hey agent"],
+            "model_engine_hotword": "vosk",
+            "model_name_hotword": "vosk-model-en-us-0.22",
+            "model_engine_stt": "openai_whisper",
+            "model_name_stt": "small.en",
+            "target_latency": 100,
+            "silence_duration": 3
+        }
+
         # example for Pvporcupine
         params = {
             "dev_index": None,
@@ -22,15 +34,15 @@ async def main():
             "silence_duration": 3
         }
 
-        # example for Vosk
+        # example for openwakeword
         params = {
             "dev_index": None,
-            "hotwords": ["hey jarvis", "hey agent"],
-            "model_engine_hotword": "vosk",
-            "model_name_hotword": "vosk-model-en-us-0.22",
+            "hotwords": ["hey_jarvis"],
+            "model_engine_hotword": "openwakeword",
+            "model_name_hotword": None,
             "model_engine_stt": "openai_whisper",
             "model_name_stt": "small.en",
-            "target_latency": 100,
+            "target_latency": 80,
             "silence_duration": 3
         }
 

@@ -1,6 +1,5 @@
 
 import os
-import queue
 import gc
 import struct
 import sounddevice as sd
@@ -15,8 +14,6 @@ load_dotenv()
 class PvporcupineEngine:
 
     def __init__(self):
-
-        self.q = queue.Queue()
 
         self.pvporcupine_model = None
 
@@ -61,9 +58,9 @@ class PvporcupineEngine:
         return True, None
 
 
-    def start_hotword_detection(self, hotword_list, blocksize, script_state, on_hotword_callback=None):
+    def start_hotword_detection(self, hotword_list, target_latency_ms, script_state, on_hotword_callback=None):
 
-        _ = blocksize
+        _ = target_latency_ms
 
         keyword_paths = []
         for hotword in hotword_list:
@@ -94,6 +91,8 @@ class PvporcupineEngine:
             while not script_state["interrupted"]:
 
                 data, _ = stream.read(frame_length)
+
+                # Convert raw bytes to a list of 16-bit samples
                 audio_frame = struct.unpack_from("h" * frame_length, data)
 
                 keyword_index = self.pvporcupine_model.process(audio_frame)

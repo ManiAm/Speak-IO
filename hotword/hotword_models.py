@@ -14,10 +14,12 @@ import config
 from speech_to_text_api import STT_REST_API_Client
 
 from engine_vosk import VoskEngine
+from engine_openwakeword import OpenwakewordEngine
 from engine_pvporcupine import PvporcupineEngine
 
 MODELS = {
     "vosk": VoskEngine(),
+    "openwakeword": OpenwakewordEngine(),
     "pvporcupine": PvporcupineEngine()
 }
 
@@ -147,20 +149,20 @@ class HotwordModel():
             return False, "hotword detection is not initialized!"
 
         hotword_list = [x.lower() for x in hotword_list]
-        blocksize = self.__choose_blocksize(target_latency_ms=target_latency_ms)
 
         while not self.script_state["interrupted"]:
 
             print(f"\nListening for hotwords '{hotword_list}'...")
 
             # blocking call until hotword is detected
-            status, output = self.model_handler.start_hotword_detection(hotword_list, blocksize, self.script_state, on_hotword_callback)
+            status, output = self.model_handler.start_hotword_detection(hotword_list, target_latency_ms, self.script_state, on_hotword_callback)
             if not status:
                 return False, output
 
             if not self.script_state["interrupted"]:
 
                 callback, audio_frames = self.__record_callback(silence_duration=silence_duration_s)
+                blocksize = utility.choose_blocksize(target_latency_ms, self.input_dev_sample_rate)
 
                 with sd.RawInputStream(
                     device=self.input_dev_index,
@@ -183,13 +185,6 @@ class HotwordModel():
                         on_transcription_callback(output)
 
         return True, None
-
-
-    def __choose_blocksize(self, target_latency_ms):
-
-        block_duration_sec = target_latency_ms / 1000
-        blocksize = int(self.input_dev_sample_rate * block_duration_sec)
-        return blocksize
 
 
     def __record_callback(self, frame_duration_ms=30, silence_duration=3):

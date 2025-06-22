@@ -14,7 +14,7 @@ class VoskEngine:
 
     def __init__(self):
 
-        self.q = queue.Queue()
+        self.q = queue.Queue(maxsize=50)
 
         self.vosk_model = None
         self.vosk_recognizer = None
@@ -31,11 +31,11 @@ class VoskEngine:
 
     def init_model(self, model_name, dev_index, dev_sample_rate, dev_channels):
 
-        print(f"\n🔄 Loading Vosk model '{model_name}'...")
-
         self.dev_index = dev_index
         self.dev_sample_rate = dev_sample_rate
         self.dev_channels = dev_channels
+
+        print(f"\n🔄 Loading Vosk model '{model_name}'...")
 
         try:
 
@@ -49,7 +49,11 @@ class VoskEngine:
         return True, None
 
 
-    def start_hotword_detection(self, hotword_list, blocksize, script_state, on_hotword_callback=None):
+    def start_hotword_detection(self, hotword_list, target_latency_ms, script_state, on_hotword_callback=None):
+
+        blocksize = utility.choose_blocksize(target_latency_ms, self.dev_sample_rate)
+
+        self.__empty_queue()
 
         with sd.RawInputStream(
             device=self.dev_index,
@@ -104,4 +108,17 @@ class VoskEngine:
 
         if status:
             print(f"[STATUS] {status}", file=sys.stderr)
-        self.q.put(bytes(indata))
+
+        try:
+            self.q.put_nowait(bytes(indata))
+        except queue.Full:
+            print("[WARN] Audio queue full — dropping frame")
+
+
+    def __empty_queue(self):
+
+        while not self.q.empty():
+            try:
+                self.q.get_nowait()
+            except queue.Empty:
+                break

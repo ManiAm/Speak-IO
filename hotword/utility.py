@@ -2,6 +2,8 @@
 import sounddevice as sd
 import soundfile as sf
 from collections import defaultdict
+from scipy.signal import resample
+import numpy as np
 
 
 SKIP_PATTERNS = [
@@ -179,6 +181,19 @@ def select_best_microphone(mic_devices, preferred_hostapis=("Windows WASAPI", "W
 def is_physical_mic(dev):
 
     return dev["in_ch"] > 0 and not any(skip in dev["name"] for skip in SKIP_PATTERNS)
+
+
+def choose_blocksize(target_latency_ms, sample_rate):
+
+    block_duration_sec = target_latency_ms / 1000
+    blocksize = int(sample_rate * block_duration_sec)
+    return blocksize
+
+
+def resample_audio(audio_frames, input_rate=44100, target_rate=16000):
+
+    num_samples = int(len(audio_frames) * target_rate / input_rate)
+    return resample(audio_frames, num_samples).astype(np.int16)
 
 
 def play_wav(filename):
