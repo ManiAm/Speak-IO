@@ -10,7 +10,7 @@ async def main():
 
     async with websockets.connect(uri) as websocket:
 
-        # example for Vosk
+        # example for Vosk (not very accurate)
         params = {
             "dev_index": None,
             "hotwords": ["hey jarvis", "hey agent"],
@@ -22,7 +22,7 @@ async def main():
             "silence_duration": 3
         }
 
-        # example for Pvporcupine
+        # example for Pvporcupine (commercial)
         params = {
             "dev_index": None,
             "hotwords": ["hey agent", "bumblebee"],
@@ -34,7 +34,7 @@ async def main():
             "silence_duration": 3
         }
 
-        # example for openwakeword
+        # example for Openwakeword (accurate and free)
         params = {
             "dev_index": None,
             "hotwords": ["hey_jarvis"],

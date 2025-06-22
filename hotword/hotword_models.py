@@ -71,7 +71,13 @@ class HotwordModel():
     def __init_input_device(self, dev_index):
 
         dev_info_default = utility.get_default_input_device()
-        print(f'\nDefault input device: [{dev_info_default["index"]}] {dev_info_default["name"]} (hostapi: {dev_info_default["hostapi_name"]})')
+
+        print(
+            f"\nDefault input device: "
+            f"[{dev_info_default['index']}] "
+            f"{dev_info_default['name']} "
+            f"(hostapi: {dev_info_default['hostapi_name']})"
+        )
 
         if not dev_index:
 
@@ -155,14 +161,22 @@ class HotwordModel():
             print(f"\nListening for hotwords '{hotword_list}'...")
 
             # blocking call until hotword is detected
-            status, output = self.model_handler.start_hotword_detection(hotword_list, target_latency_ms, self.script_state, on_hotword_callback)
+            status, output = self.model_handler.start_hotword_detection(
+                hotword_list,
+                target_latency_ms,
+                self.script_state,
+                on_hotword_callback)
+
             if not status:
                 return False, output
 
             if not self.script_state["interrupted"]:
 
                 callback, audio_frames = self.__record_callback(silence_duration=silence_duration_s)
-                blocksize = utility.choose_blocksize(target_latency_ms, self.input_dev_sample_rate)
+
+                blocksize = utility.choose_blocksize(
+                    target_latency_ms,
+                    self.input_dev_sample_rate)
 
                 with sd.RawInputStream(
                     device=self.input_dev_index,
