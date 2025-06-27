@@ -13,8 +13,6 @@ The core components of Speak-IO include:
 
 - **text_to_speech** container synthesizes natural-sounding audio from input text using pluggable TTS engines such as `Coqui`, `Piper`, `Bark`, and `Chatterbox`. It supports model loading, multi-language synthesis, and wav output suitable for immediate playback.
 
-- **hotword** container enables passive voice activation using offline wake word detection. This component continuously listens for predefined trigger phrases and activates downstream actions when a match is detected. An ideal hotword engine runs efficiently for extended periods with minimal CPU usage, supports low-latency detection, operates offline, and maintains high accuracy across varying accents and background noise conditions.
-
 Each service is isolated but interoperable via REST APIs and WebSocket endpoints, making Speak-IO extensible and well-suited for both local experimentation and production use.
 
 <img src="pics/speak-io.jpeg" alt="segment" width="800">
@@ -23,7 +21,6 @@ For further details, refer to the following documentations:
 
 - [Speech to Text](speech_to_text/README.md)
 - [Text to Speech](text_to_speech/README.md)
-- [Hotword Detection](hotword/README.md)
 
 ## Getting Started
 
@@ -51,11 +48,6 @@ These URLs provide access to text-to-speech service:
 
 - Swagger API docs: http://localhost:5500/api/docs
 - API Base URL: http://localhost:5500/api/tts/
-
-These URLs provide access to hotword detection service:
-
-- Swagger API docs: http://localhost:5600/api/docs
-- API Base URL: http://localhost:5600/api/hotword/
 
 Once the containers are up and running, access the Voice UI at:
 
