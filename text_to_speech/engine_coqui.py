@@ -1,7 +1,4 @@
 
-import numpy as np
-import wave
-import io
 import torch
 from collections import defaultdict
 
@@ -9,6 +6,8 @@ from TTS.api import TTS
 from TTS.tts.configs.xtts_config import XttsConfig
 from TTS.tts.models.xtts import XttsAudioConfig, XttsArgs
 from TTS.config.shared_configs import BaseDatasetConfig
+
+import utility
 
 
 torch.serialization.add_safe_globals([
@@ -69,24 +68,8 @@ class CoquiEngine:
         try:
 
             wav_array = model.tts(text=text, vocoder_path=vocoder_model)
-
-            # Convert numpy array to WAV in-memory
-            with io.BytesIO() as wav_io:
-
-                with wave.open(wav_io, "wb") as wav_file:
-
-                    wav_file.setnchannels(1)        # mono
-                    wav_file.setsampwidth(2)        # 16-bit PCM
-                    wav_file.setframerate(22050)    # sample rate
-
-                    # Convert float32 [-1.0, 1.0] to int16 [-32768, 32767]
-                    int16_audio = np.clip(wav_array, -1.0, 1.0)
-                    int16_audio = (int16_audio * 32767).astype(np.int16)
-                    wav_file.writeframes(int16_audio.tobytes())
-
-                wav_data = wav_io.getvalue()
+            wav_data = utility.write_normalized_wav_bytes(wav_array, 22050)
+            return True, wav_data
 
         except Exception as e:
             return False, f"synthesize failed: {e}"
-
-        return True, wav_data

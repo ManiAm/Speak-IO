@@ -1,9 +1,9 @@
 
 import os
-import io
 import torch
-import torchaudio as ta
 from chatterbox.tts import ChatterboxTTS
+
+import utility
 
 
 class ChatterBoxEngine:
@@ -54,8 +54,7 @@ class ChatterBoxEngine:
 
         wav = self.model.generate(text)
 
-        buffer = io.BytesIO()
-        ta.save(buffer, wav, self.model.sr, format="wav")
-        wav_data = buffer.getvalue()
+        wav_np = wav.cpu().numpy()
+        wav_data = utility.write_normalized_wav_bytes(wav_np, self.model.sr)
 
         return True, wav_data

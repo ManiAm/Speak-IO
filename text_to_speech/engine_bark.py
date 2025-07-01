@@ -1,8 +1,6 @@
 
 import os
-import io
 import numpy as np
-from scipy.io.wavfile import write as write_wav
 
 from bark import SAMPLE_RATE, generate_audio
 from bark.generation import load_model as load_model_bark, load_codec_model
@@ -103,12 +101,5 @@ class BarkEngine:
         # Combine all segments into final output
         final_audio = np.concatenate(audio_segments)
 
-        final_audio_int16 = np.int16(final_audio * 32767)
-
-        # Write to WAV buffer
-        wav_buffer = io.BytesIO()
-        write_wav(wav_buffer, SAMPLE_RATE, final_audio_int16)
-        wav_buffer.seek(0)
-        wav_data = wav_buffer.getvalue()  # return as bytes
-
+        wav_data = utility.write_normalized_wav_bytes(final_audio, SAMPLE_RATE)
         return True, wav_data

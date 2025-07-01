@@ -1,8 +1,12 @@
 
 import re
-import nltk
+import io
+import wave
 import unicodedata
+import nltk
 from nltk.tokenize import sent_tokenize
+import numpy as np
+from contextlib import closing
 
 
 def clean_tts_input(text: str):
@@ -64,3 +68,21 @@ def break_text(text: str, max_chars=250):
         grouped_sentences.append(current_chunk.strip())
 
     return grouped_sentences
+
+
+def write_normalized_wav_bytes(audio: np.ndarray, sample_rate: int) -> bytes:
+
+    max_val = np.max(np.abs(audio))
+    if max_val > 0:
+        audio = audio / max_val * 0.90
+
+    audio_int16 = np.clip(audio * 32767, -32768, 32767).astype(np.int16)
+
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2)
+        wf.setframerate(sample_rate)
+        wf.writeframes(audio_int16.tobytes())
+
+    return buf.getvalue()
